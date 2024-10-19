@@ -33,9 +33,9 @@ await pb.admins.authWithPassword(
   POCKETBASE_ADMIN_PASSWORD,
 );
 
-function readFile(filePath: string): string {
+function readFile(filePath: string): Promise<string> {
   try {
-    return Deno.readTextFileSync(filePath);
+    return Deno.readTextFile(filePath);
   } catch (error) {
     console.error(
       `ERROR: unable to read file ${INPUT_FILE}, err: ${error}`,
@@ -48,7 +48,7 @@ function prepareWord(wordRaw: string): string {
   return wordRaw.trim().toLowerCase();
 }
 
-const wordsData = readFile(INPUT_FILE);
+const wordsData = await readFile(INPUT_FILE);
 const inputWordsRaw = wordsData.split(/\n/);
 
 if (!inputWordsRaw.length) {
