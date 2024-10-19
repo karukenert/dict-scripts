@@ -6,6 +6,7 @@
     "@std/cli": "jsr:@std/cli@^1.0.6"
   },
   "fmt": {
-    "singleQuote": true
+    "singleQuote": true,
+    "useTabs": true
   }
 }
