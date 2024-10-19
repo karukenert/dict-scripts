@@ -1,6 +1,11 @@
 {
   "tasks": {
-    "import": "deno run --env-file --allow-env --allow-net --allow-read mass-import.ts",
+    "import": "deno run --env-file --allow-env --allow-net --allow-read mass-import.ts --locale=en --file=words.txt"
   },
-  "imports": {}
+  "imports": {
+    "@std/cli": "jsr:@std/cli@^1.0.6"
+  },
+  "fmt": {
+    "singleQuote": true
+  }
 }

@@ -1,24 +1,29 @@
-import PocketBase from "npm:pocketbase";
+import PocketBase from 'npm:pocketbase';
+import { parseArgs } from '@std/cli/parse-args';
 
-// TODO: pass by arguments
-const INPUT_FILE = "./words.txt";
-const LOCALE = "en";
+const flags = parseArgs(Deno.args, {
+  string: ['file', 'locale'],
+  alias: {
+    file: 'f',
+    locale: 'l',
+  },
+});
 
-const POCKETBASE_URL = Deno.env.get("POCKETBASE_URL")!;
-const POCKETBASE_ADMIN_USERNAME = Deno.env.get("POCKETBASE_ADMIN_USERNAME")!;
-const POCKETBASE_ADMIN_PASSWORD = Deno.env.get("POCKETBASE_ADMIN_PASSWORD")!;
+const INPUT_FILE = flags.file;
+const LOCALE = flags.locale;
+const POCKETBASE_URL = Deno.env.get('POCKETBASE_URL');
+const POCKETBASE_ADMIN_USERNAME = Deno.env.get('POCKETBASE_ADMIN_USERNAME');
+const POCKETBASE_ADMIN_PASSWORD = Deno.env.get('POCKETBASE_ADMIN_PASSWORD');
 
 if (
-  ![POCKETBASE_URL, POCKETBASE_ADMIN_PASSWORD, POCKETBASE_ADMIN_USERNAME].every(
-    Boolean,
-  )
+  !POCKETBASE_URL || !POCKETBASE_ADMIN_PASSWORD || !POCKETBASE_ADMIN_USERNAME
 ) {
-  console.error(`ERROR: validate that env variables exist`);
+  console.error('ERROR: env variables not set');
   Deno.exit(1);
 }
 
-if (!LOCALE) {
-  console.error(`ERROR: set locale`);
+if (!LOCALE || !INPUT_FILE) {
+  console.error('ERROR: mandatory arguments not passed');
   Deno.exit(1);
 }
 
@@ -30,9 +35,7 @@ await pb.admins.authWithPassword(
 
 function readFile(filePath: string): string {
   try {
-    const fileContent = Deno.readTextFileSync(filePath);
-
-    return fileContent.toString();
+    return Deno.readTextFileSync(filePath);
   } catch (error) {
     console.error(
       `ERROR: unable to read file ${INPUT_FILE}, err: ${error}`,
@@ -53,7 +56,7 @@ if (!inputWordsRaw.length) {
   Deno.exit(1);
 }
 
-const existingWords = (await pb.collection("words").getFullList()).map((i) =>
+const existingWords = (await pb.collection('words').getFullList()).map((i) =>
   prepareWord(i.word)
 );
 
@@ -61,13 +64,17 @@ const preparedWords = inputWordsRaw.map(prepareWord).filter((word) => {
   return word && !existingWords.includes(word);
 });
 
-// add words one by one
-for await (const word of preparedWords) {
-  await pb.collection("words").create({
-    word,
-    locale: LOCALE,
-  });
-  console.log(`Word "${word}" added to database`);
+if (preparedWords.length) {
+  // add words one by one
+  for await (const word of preparedWords) {
+    await pb.collection('words').create({
+      word,
+      locale: LOCALE,
+    });
+    console.log(`Word '${word}' added to database`);
+  }
+} else {
+  console.log('No new words to add to database');
 }
 
-pb.authStore.clear();
+Deno.exit(0);
