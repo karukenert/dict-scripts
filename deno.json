@@ -1,0 +1,6 @@
+{
+  "tasks": {
+    "import": "deno run --env-file --allow-env --allow-net --allow-read mass-import.ts",
+  },
+  "imports": {}
+}

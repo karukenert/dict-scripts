@@ -1,24 +1,25 @@
-import fs from 'fs';
-import PocketBase from 'pocketbase';
+import PocketBase from "npm:pocketbase";
 
-const INPUT_FILE = './words.txt';
-const LOCALE = 'en';
-const POCKETBASE_URL = process.env.POCKETBASE_URL;
-const POCKETBASE_ADMIN_USERNAME = process.env.POCKETBASE_ADMIN_USERNAME;
-const POCKETBASE_ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD;
+// TODO: pass by arguments
+const INPUT_FILE = "./words.txt";
+const LOCALE = "en";
+
+const POCKETBASE_URL = Deno.env.get("POCKETBASE_URL")!;
+const POCKETBASE_ADMIN_USERNAME = Deno.env.get("POCKETBASE_ADMIN_USERNAME")!;
+const POCKETBASE_ADMIN_PASSWORD = Deno.env.get("POCKETBASE_ADMIN_PASSWORD")!;
 
 if (
-  !POCKETBASE_URL ||
-  !POCKETBASE_ADMIN_PASSWORD ||
-  !POCKETBASE_ADMIN_USERNAME
+  ![POCKETBASE_URL, POCKETBASE_ADMIN_PASSWORD, POCKETBASE_ADMIN_USERNAME].every(
+    Boolean,
+  )
 ) {
   console.error(`ERROR: validate that env variables exist`);
-  process.exit(1);
+  Deno.exit(1);
 }
 
 if (!LOCALE) {
   console.error(`ERROR: set locale`);
-  process.exit(1);
+  Deno.exit(1);
 }
 
 const pb = new PocketBase(POCKETBASE_URL);
@@ -29,13 +30,14 @@ await pb.admins.authWithPassword(
 
 function readFile(filePath: string): string {
   try {
-    const fileContent = fs.readFileSync(filePath);
+    const fileContent = Deno.readTextFileSync(filePath);
+
     return fileContent.toString();
   } catch (error) {
     console.error(
-      `ERROR: unable to read file ${INPUT_FILE}, err: ${error.message}`,
+      `ERROR: unable to read file ${INPUT_FILE}, err: ${error}`,
     );
-    process.exit(1);
+    Deno.exit(1);
   }
 }
 
@@ -47,12 +49,12 @@ const wordsData = readFile(INPUT_FILE);
 const inputWordsRaw = wordsData.split(/\n/);
 
 if (!inputWordsRaw.length) {
-  console.error(`ERROR: No words presen in input file ${INPUT_FILE}`);
-  process.exit(1);
+  console.error(`ERROR: No words present in input file ${INPUT_FILE}`);
+  Deno.exit(1);
 }
 
-const existingWords = (await pb.collection('words').getFullList()).map((i) =>
-  prepareWord(i.word),
+const existingWords = (await pb.collection("words").getFullList()).map((i) =>
+  prepareWord(i.word)
 );
 
 const preparedWords = inputWordsRaw.map(prepareWord).filter((word) => {
@@ -61,11 +63,11 @@ const preparedWords = inputWordsRaw.map(prepareWord).filter((word) => {
 
 // add words one by one
 for await (const word of preparedWords) {
-  await pb.collection('words').create({
+  await pb.collection("words").create({
     word,
     locale: LOCALE,
   });
-  console.log(`Word ${word} added to database`);
+  console.log(`Word "${word}" added to database`);
 }
 
 pb.authStore.clear();
